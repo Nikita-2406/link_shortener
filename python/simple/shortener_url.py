@@ -1,11 +1,9 @@
 import json
+import os
 import secrets
-import string
-from typing import Dict, Optional
+from typing import Optional, TypedDict
 from hashlib import sha256
 import heapq
-
-ALPHABET = string.ascii_lowercase + string.digits
 
 
 def _make_short_code(long_url: str) -> str:
@@ -19,14 +17,23 @@ def _make_short_code(long_url: str) -> str:
     return h[:8]
 
 
+class URLEntry(TypedDict):
+    long_url: str
+    count_use: int
+
+
 class URLShortener:
-    def __init__(self, data_file: str = "url_shortener.json", max_count_url: int = 1000):
-        self.data: Dict[str, dict] = {}  # short_code -> {long_url:..., count_use:...}
-        self.long_to_short: Dict[str, str] = {}  # long_url -> short_code для поиска сложностью O(1)
+    def __init__(self, data_file: str = "url_shortener.json",
+                 max_count_url: int = 1000,
+                 base_url: str = "http://short.ru/"):
+        self.data: dict[str, URLEntry] = {}  # short_code -> {long_url:..., count_use:...}
+        self.long_to_short: dict[str, str] = {}  # long_url -> short_code для поиска сложностью O(1)
+        self.heap: list[tuple] = []
+
         self.data_file = data_file
         self.max_count_url = max_count_url
-        self.base_url = "http://short.ru/"
-        self.heap: list[tuple] = []
+        self.base_url = base_url
+
         self._count = 0
         self._next_insert_order: int = 0
 
@@ -42,8 +49,6 @@ class URLShortener:
 
             Алгоритмическая сложность O(log n)
         """
-        if not self.heap:
-            return False
 
         while self.heap:
             count_use, insert_order, short_code = heapq.heappop(self.heap)
@@ -51,12 +56,13 @@ class URLShortener:
             if short_code not in self.data:
                 continue
 
-            data = self.data[short_code]
-            long_url = data["long_url"]
+            if self.data[short_code]["count_use"] != count_use:
+                continue
 
+            long_url = self.data[short_code]["long_url"]
             del self.data[short_code]
             del self.long_to_short[long_url]
-
+            self._count -= 1
             return True
 
         return False
@@ -67,15 +73,20 @@ class URLShortener:
 
             Алгоритмическая сложность O(1)
         """
+
         # если этот URL уже есть, возвращаем его старую короткую ссылку
         if long_url in self.long_to_short:
+
             short_code = self.long_to_short[long_url]
-            self.data[short_code]["count_use"] += 1
+            new_count = self.data[short_code]["count_use"]
+            self._next_insert_order += 1
+            heapq.heappush(self.heap, (new_count, self._next_insert_order, short_code))
             return self.base_url + short_code
 
         if self._count >= self.max_count_url:
-            self._del_unused_url()
-            self._count -= 1
+            is_deleted = self._del_unused_url()
+            if not is_deleted:
+                raise RuntimeError("Не удалось освободить место: хранилище переполнено")
 
         # генерим новый код, пока не найдём свободный, коллизия практически невозможна, но на всякий случай есть цикл
         while True:
@@ -99,10 +110,14 @@ class URLShortener:
 
             Алгоритмическая сложность O(1)
         """
-        path = short_url.rstrip("/").split("/")[-1]
-        if not path:
+        short_code = short_url.rstrip("/").split("/")[-1]
+        if not short_code:
             return None
-        return self.data.get(path)["long_url"]
+        data = self.data.get(short_code)
+        if data is None:
+            return None
+        data["count_use"] += 1
+        return data["long_url"]
 
     def save(self):
         """
@@ -110,8 +125,10 @@ class URLShortener:
 
             Алгоритмическая сложность O(n)
         """
-        with open(self.data_file, "w", encoding="utf-8") as f:
+        tmp_file = self.data_file + ".tmp"
+        with open(tmp_file, "w", encoding="utf-8") as f:
             json.dump(self.data, f)
+        os.replace(tmp_file, self.data_file)
 
     def load(self):
         """
@@ -121,7 +138,10 @@ class URLShortener:
         """
         try:
             with open(self.data_file, "r", encoding="utf-8") as f:
-                self.data = json.load(f)
+                raw = json.load(f)
+            if not isinstance(raw, dict):
+                raise ValueError("Неверный формат данных при загрузке")
+            self.data = raw
         except (FileNotFoundError, json.JSONDecodeError):
             self.data = {}
             return
