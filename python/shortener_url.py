@@ -18,8 +18,8 @@ def _make_short_code(long_url: str) -> str:
 
 
 class URLEntry(TypedDict):
-    long_url: str
-    count_use: int
+        long_url: str
+        count_use: int
 
 
 class URLShortener:
@@ -36,6 +36,7 @@ class URLShortener:
 
         self._count = 0
         self._next_insert_order: int = 0
+        self.number_transit = 0
 
         self.load()
 
@@ -102,6 +103,7 @@ class URLShortener:
                 heapq.heappush(self.heap, (0, self._next_insert_order, short_code))
 
                 self._count += 1
+                self.number_transit += 1
                 return self.base_url + short_code
 
     def resolve(self, short_url: str) -> Optional[str]:
@@ -118,6 +120,14 @@ class URLShortener:
             return None
         data["count_use"] += 1
         return data["long_url"]
+
+    def get_count_transit(self):
+        """
+            Возвращает количество переходов из длинной ссылки в короткую
+
+            Алгоритмическая сложность O(1)
+        """
+        return f'Количество переходов из длинного url в короткий = {self.number_transit}'
 
     def save(self):
         """

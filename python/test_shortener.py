@@ -1,9 +1,5 @@
-import json
 import os
-import tempfile
 import pytest
-from unittest.mock import patch, mock_open, MagicMock
-
 from .shortener_url import _make_short_code, URLShortener
 
 
@@ -118,7 +114,7 @@ class TestShorten:
         """При переполнении вытесняется наименее используемая ссылка"""
         s = shortener_capacity_1
         r1 = s.shorten("https://first.com")
-        r2 = s.shorten("https://second.com")  # должна вытеснить первую
+        r2 = s.shorten("https://second.com")  # вытесняет первую
         assert s._count == 1
         # первая ссылка должна быть удалена
         code1 = r1.split("/")[-1]
@@ -140,19 +136,6 @@ class TestShorten:
         assert short_code_u2 not in s.data
         # popular.com должна остаться
         assert "https://popular.com" in s.long_to_short
-
-    # def test_collision_handling(self, shortener):
-    #     existing_code = "aaaaaaaa"
-    #     shortener.data[existing_code] = {
-    #         "long_url": "https://other.com",
-    #         "count_use": 0
-    #     }
-    #     shortener.long_to_short["https://other.com"] = existing_code
-    #
-    #     with patch("shortener_url._make_short_code",
-    #                side_effect=[existing_code, existing_code, "bbbbbbbb"]):
-    #         result = shortener.shorten("https://new.com")
-    #     assert result.endswith("bbbbbbbb")
 
 
 # ──────────────────────────────────────────────

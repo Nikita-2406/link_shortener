@@ -1,16 +1,119 @@
-# React + Vite
+# URL Shortener (React + Vite)
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Локальное SPA-приложение для сокращения ссылок с хранением в `localStorage`.
 
-Currently, two official plugins are available:
+## Возможности
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- Сокращение длинного URL в короткий URL формата `http://localhost:5173/<shortCode>`.
+- Повторное сокращение того же длинного URL возвращает существующую короткую ссылку.
+- Разрешение короткой ссылки в длинную.
+- Автоматический редирект при открытии короткой ссылки `/<shortCode>`.
+- Подсчет количества переходов (`hitCount`) по короткой ссылке.
+- Ограничение емкости хранилища (`capacity`), задается пользователем при старте.
+- Политика вытеснения при переполнении: LFU + FIFO по времени создания:
+  - удаляется запись с минимальным `hitCount`;
+  - при равном `hitCount` удаляется более старая (`createdAt` меньше).
 
-## React Compiler
+## Технологии
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+- React 19
+- Vite 8
+- ESLint
+- `localStorage` браузера для персистентности
 
-## Expanding the ESLint configuration
+## Архитектура (OOP)
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+Основная логика отделена от UI.
+
+- `UrlEntry` (`src/lib/urlStore.js`)
+  - доменная сущность ссылки (`id`, `longUrl`, `shortCode`, `hitCount`, `createdAt`);
+  - методы `incrementHits()`, `toJSON()`, `fromJSON()`.
+- `UrlRepository` (`src/lib/urlStore.js`)
+  - слой доступа к `localStorage`;
+  - методы `load()` и `save()`.
+- `UrlShortenerService` (`src/lib/urlStore.js`)
+  - бизнес-логика: `init()`, `shorten()`, `resolve()`, `listAll()`, `persist()`;
+  - управление индексами и вытеснением.
+- `App` (`src/App.jsx`)
+  - UI, формы и отображение данных;
+  - вызывает только публичные методы сервиса.
+
+## Структура данных
+
+Каждая запись:
+
+```json
+{
+  "id": "string",
+  "longUrl": "string",
+  "shortCode": "string",
+  "hitCount": 0,
+  "createdAt": 1710000000000
+}
+```
+
+Состояние хранится в `localStorage` под ключом `link_shortener_store_v1`.
+
+## Индексы и оптимизация
+
+Для ускорения операций используются два `Map`:
+
+- `longToShort: Map<longUrl, shortCode>`
+- `shortToEntry: Map<shortCode, UrlEntry>`
+
+Это позволяет избежать полного сканирования коллекции в основных горячих сценариях.
+
+## Сложность алгоритмов
+
+- Инициализация из `localStorage` + построение индексов: **O(n)** по времени, **O(n)** по памяти.
+- `shorten(longUrl)`:
+  - проверка дубля по `longToShort`: **O(1)** в среднем;
+  - генерация уникального short code: **O(1)** в среднем (пока коллизии редки);
+  - при переполнении вытеснение LFU+FIFO: **O(n)** (линейный поиск кандидата);
+  - вставка и обновление индексов: **O(1)** в среднем.
+- `resolve(shortCode)`:
+  - поиск по `shortToEntry`: **O(1)** в среднем;
+  - инкремент счетчика и сохранение: доменная операция **O(1)** + сериализация состояния **O(n)**.
+- `listAll()`:
+  - копирование + сортировка по `createdAt`: **O(n log n)**.
+
+Примечание: из-за полного сохранения снимка состояния в `localStorage` после изменений есть дополнительная стоимость сериализации `O(n)`.
+
+## Поведение редиректа
+
+При старте приложения анализируется `window.location.pathname`:
+
+- если путь пустой (`/`) — открывается стандартный UI;
+- если путь содержит `shortCode` — выполняется `resolve(shortCode)` и `window.location.replace(longUrl)`;
+- если код не найден — редирект не выполняется, UI продолжает работу.
+
+## Валидация и ограничения
+
+- Поддерживаются только `http` и `https` URL.
+- `capacity` должна быть целым числом > 0.
+- При битых данных в `localStorage` используется безопасный fallback на пустое состояние.
+
+## Запуск проекта
+
+```bash
+npm install
+npm run dev
+```
+
+Приложение будет доступно по адресу из Vite (обычно `http://localhost:5173`).
+
+## Проверка качества
+
+```bash
+npm run lint
+npm run build
+```
+
+## Пример сценария
+
+1. Указать `capacity` (например, `3`).
+2. Сократить URL `https://example.com/page/1`.
+3. Получить короткую ссылку вида `http://localhost:5173/AbC1234`.
+4. Открыть ее в браузере и убедиться в редиректе на исходный URL.
+5. Проверить, что `hitCount` увеличился.
+6. Добавить больше 3 ссылок и проверить корректность вытеснения LFU+FIFO.
