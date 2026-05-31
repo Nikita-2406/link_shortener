@@ -2,6 +2,29 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import './App.css'
 import { UrlShortenerService } from './lib/urlStore'
 
+function normalizeBasePath() {
+  const base = import.meta.env.BASE_URL || '/'
+  if (base === '/') {
+    return ''
+  }
+  return base.endsWith('/') ? base.slice(0, -1) : base
+}
+
+function buildShortUrl(shortCode) {
+  const base = import.meta.env.BASE_URL || '/'
+  const prefix = base.endsWith('/') ? base : `${base}/`
+  return `${window.location.origin}${prefix}${shortCode}`
+}
+
+function getShortCodeFromPathname(pathname) {
+  const basePath = normalizeBasePath()
+  let relative = pathname
+  if (basePath && (pathname === basePath || pathname.startsWith(`${basePath}/`))) {
+    relative = pathname.slice(basePath.length)
+  }
+  return relative.replace(/^\/+/, '').split('/')[0] || ''
+}
+
 function App() {
   const service = useMemo(() => {
     const instance = new UrlShortenerService()
@@ -29,8 +52,6 @@ function App() {
     setErrorMessage('')
   }
 
-  const buildShortUrl = (shortCode) => `${window.location.origin}/${shortCode}`
-
   const parseShortCodeInput = (value) => {
     const trimmed = value.trim()
     if (!trimmed) {
@@ -38,12 +59,17 @@ function App() {
     }
 
     if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
+      let parsed
       try {
-        const parsed = new URL(trimmed)
-        return parsed.pathname.replace(/^\/+/, '')
+        parsed = new URL(trimmed)
       } catch {
         throw new Error('Invalid short URL format.')
       }
+      const code = getShortCodeFromPathname(parsed.pathname)
+      if (!code) {
+        throw new Error('Short code is required.')
+      }
+      return code
     }
 
     return trimmed
@@ -114,7 +140,7 @@ function App() {
     }
     hasProcessedRedirect.current = true
 
-    const pathCode = window.location.pathname.replace(/^\/+/, '')
+    const pathCode = getShortCodeFromPathname(window.location.pathname)
     if (!pathCode) {
       return
     }
@@ -123,7 +149,6 @@ function App() {
       const entry = service.resolve(pathCode)
       window.location.replace(entry.longUrl)
     } catch {
-      // Unknown short code: keep showing the main UI.
     }
   }, [service])
 

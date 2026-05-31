@@ -166,7 +166,7 @@ yarn build
 
 1. Указать `capacity` (например, `3`).
 2. Сократить URL `https://example.com/page/1`.
-3. Получить короткую ссылку вида `http://localhost:5173/AbC1234`.
+3. Получить короткую ссылку вида `http://localhost:5173/AbC1234` (на GitHub Pages: `https://nikita-2406.github.io/link_shortener/AbC1234`).
 4. Открыть ее в браузере и убедиться в редиректе на исходный URL.
 5. Проверить, что `hitCount` увеличился.
 6. Добавить больше 3 ссылок и проверить корректность вытеснения LFU+FIFO.
