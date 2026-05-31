@@ -138,13 +138,22 @@ Workflow [.github/workflows/react-app.yml](../../.github/workflows/react-app.yml
 
 - **lint-and-build** — `yarn lint` и `yarn build`
 - **docker-smoke** — сборка образа `web`, запуск compose и HTTP-проверка
-- **deploy-pages** — деплой на GitHub Pages при push в `main` / `master`
+- **deploy-pages** — только при **push в `main` (не на другие ветки)
 
-Однократно в репозитории: **Settings → Pages → Build and deployment → Source: GitHub Actions**.
+### Включение GitHub Pages (обязательно один раз)
 
-После успешного деплоя приложение доступно по адресу:
+Ошибка `Failed to create deployment (status: 404)` означает, что Pages ещё не настроен.
 
-`https://<username>.github.io/<repository-name>/`
+1. Откройте [Settings → Pages](https://github.com/Nikita-2406/link_shortener/settings/pages) репозитория.
+2. В блоке **Build and deployment** для **Source** выберите **GitHub Actions** (не «Deploy from a branch»).
+3. Сохраните настройки.
+4. Сделайте push в `main` (или перезапустите failed workflow: Actions → React App → Re-run jobs).
+
+Для **приватного** репозитория нужен платный план GitHub, иначе Pages недоступен.
+
+После успешного деплоя:
+
+`https://nikita-2406.github.io/link_shortener/`
 
 ## Проверка качества
 
