@@ -1,0 +1,29 @@
+services:
+  web:
+    build:
+      context: .
+      target: production
+      args:
+        VITE_BASE_PATH: ${VITE_BASE_PATH:-/}
+    ports:
+      - "8080:80"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1/"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+      start_period: 5s
+
+  dev:
+    profiles:
+      - dev
+    build:
+      context: .
+      target: dev
+    ports:
+      - "5173:5173"
+    volumes:
+      - .:/app
+      - /app/node_modules
+    environment:
+      - VITE_BASE_PATH=${VITE_BASE_PATH:-/}

@@ -123,6 +123,7 @@ function App() {
       const entry = service.resolve(pathCode)
       window.location.replace(entry.longUrl)
     } catch {
+      // Unknown short code: keep showing the main UI.
     }
   }, [service])
 

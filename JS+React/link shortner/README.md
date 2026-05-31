@@ -96,17 +96,61 @@
 ## Запуск проекта
 
 ```bash
-npm install
-npm run dev
+yarn install
+yarn dev
 ```
 
 Приложение будет доступно по адресу из Vite (обычно `http://localhost:5173`).
 
+## Docker
+
+Из корня React-проекта:
+
+```bash
+cd "JS+React/link shortner"
+```
+
+**Production (Nginx, порт 8080):**
+
+```bash
+docker compose up --build web
+```
+
+Откройте http://localhost:8080
+
+**Development (Vite с hot-reload, порт 5173):**
+
+```bash
+docker compose --profile dev up --build dev
+```
+
+Откройте http://localhost:5173
+
+Для сборки с другим `base` (например, GitHub Pages):
+
+```bash
+VITE_BASE_PATH=/link_shortener/ docker compose build web
+```
+
+## CI и GitHub Pages
+
+Workflow [.github/workflows/react-app.yml](../../.github/workflows/react-app.yml) при изменениях в этой папке:
+
+- **lint-and-build** — `yarn lint` и `yarn build`
+- **docker-smoke** — сборка образа `web`, запуск compose и HTTP-проверка
+- **deploy-pages** — деплой на GitHub Pages при push в `main` / `master`
+
+Однократно в репозитории: **Settings → Pages → Build and deployment → Source: GitHub Actions**.
+
+После успешного деплоя приложение доступно по адресу:
+
+`https://<username>.github.io/<repository-name>/`
+
 ## Проверка качества
 
 ```bash
-npm run lint
-npm run build
+yarn lint
+yarn build
 ```
 
 ## Пример сценария
