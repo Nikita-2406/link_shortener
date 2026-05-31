@@ -149,6 +149,7 @@ function App() {
       const entry = service.resolve(pathCode)
       window.location.replace(entry.longUrl)
     } catch {
+      // Неизвестный короткий код: продолжаем работу с основным UI.
     }
   }, [service])
 
