@@ -1,6 +1,6 @@
 # URL Shortener (React + Vite)
 
-## РаБоту сайта можно протестировать по ссылке `https://nikita-2406.github.io/link_shortener/`
+## Работу сайта можно протестировать по ссылке `https://nikita-2406.github.io/link_shortener/`
 
 Локальное SPA-приложение для сокращения ссылок с хранением в `localStorage`.
 
