@@ -1,5 +1,7 @@
 # URL Shortener (React + Vite)
 
+## Раюоту сайта можно протестировать по ссылке `https://nikita-2406.github.io/link_shortener/`
+
 Локальное SPA-приложение для сокращения ссылок с хранением в `localStorage`.
 
 ## Возможности
@@ -132,41 +134,9 @@ docker compose --profile dev up --build dev
 VITE_BASE_PATH=/link_shortener/ docker compose build web
 ```
 
-## CI и GitHub Pages
-
-Workflow [.github/workflows/react-app.yml](../../.github/workflows/react-app.yml) при изменениях в этой папке:
-
-- **lint-and-build** — `yarn lint` и `yarn build`
-- **docker-smoke** — сборка образа `web`, запуск compose и HTTP-проверка
-- **deploy-pages** — при **push в `main`/`master`** или вручную (**Actions → React App → Run workflow**). На PR job **Skipped** — это нормально.
-
-### Включение GitHub Pages (обязательно один раз)
-
-Ошибка `Failed to create deployment (status: 404)` означает, что Pages ещё не настроен.
-
-1. Откройте [Settings → Pages](https://github.com/Nikita-2406/link_shortener/settings/pages) репозитория.
-2. В блоке **Build and deployment** для **Source** выберите **GitHub Actions** (не «Deploy from a branch»).
-3. Сохраните настройки.
-4. Сделайте push в `main` (или перезапустите failed workflow: Actions → React App → Re-run jobs).
-
-Для **приватного** репозитория нужен платный план GitHub, иначе Pages недоступен.
-
-После успешного деплоя:
-
-`https://nikita-2406.github.io/link_shortener/`
-
 ## Проверка качества
 
 ```bash
 yarn lint
 yarn build
 ```
-
-## Пример сценария
-
-1. Указать `capacity` (например, `3`).
-2. Сократить URL `https://example.com/page/1`.
-3. Получить короткую ссылку вида `http://localhost:5173/AbC1234` (на GitHub Pages: `https://nikita-2406.github.io/link_shortener/AbC1234`).
-4. Открыть ее в браузере и убедиться в редиректе на исходный URL.
-5. Проверить, что `hitCount` увеличился.
-6. Добавить больше 3 ссылок и проверить корректность вытеснения LFU+FIFO.
