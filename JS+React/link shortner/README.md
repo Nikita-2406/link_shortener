@@ -138,7 +138,7 @@ Workflow [.github/workflows/react-app.yml](../../.github/workflows/react-app.yml
 
 - **lint-and-build** — `yarn lint` и `yarn build`
 - **docker-smoke** — сборка образа `web`, запуск compose и HTTP-проверка
-- **deploy-pages** — только при **push в `main` (не на другие ветки)
+- **deploy-pages** — при **push в `main`/`master`** или вручную (**Actions → React App → Run workflow**). На PR job **Skipped** — это нормально.
 
 ### Включение GitHub Pages (обязательно один раз)
 
